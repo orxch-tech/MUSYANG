@@ -6,24 +6,47 @@
 <link rel="manifest" href="manifest.json">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 :root{
- --primary:#6366f1; --bg:#f4f7ff; --card:#ffffff; --text:#0f172a;
+ --primary:#6366f1;
+ --secondary:#22c55e;
+ --danger:#ef4444;
+ --bg:#f1f5f9;
+ --card:#ffffff;
+ --text:#0f172a;
+ --muted:#64748b;
 }
 *{box-sizing:border-box}
-body{margin:0;font-family:'Segoe UI',system-ui;background:var(--bg);color:var(--text)}
-.container{max-width:1200px;margin:auto;padding:16px}
-.card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 10px 25px rgba(0,0,0,.06);margin-bottom:16px}
-button{padding:12px 18px;border:none;border-radius:12px;cursor:pointer;font-weight:600}
+body{margin:0;font-family:'Inter',system-ui;background:var(--bg);color:var(--text)}
+.container{max-width:1100px;margin:auto;padding:14px}
+.card{background:var(--card);border-radius:18px;padding:16px;box-shadow:0 8px 30px rgba(0,0,0,.06);margin-bottom:14px}
+button{padding:12px 16px;border:none;border-radius:14px;cursor:pointer;font-weight:600;font-size:14px}
 .primary{background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff}
+.secondary{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff}
+.danger{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff}
 .hidden{display:none}
-.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-input,select{padding:12px;width:100%;margin:6px 0;border-radius:10px;border:1px solid #e2e8f0}
-.table{width:100%;border-collapse:collapse;font-size:14px}
+.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px}
+.nav h2{margin:0;font-size:18px}
+input,select{padding:12px;width:100%;margin:6px 0;border-radius:12px;border:1px solid #e2e8f0;font-size:14px}
+.table{width:100%;border-collapse:collapse;font-size:13px}
 .table th,.table td{border-bottom:1px solid #e5e7eb;padding:10px;text-align:center}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
-@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.page{animation:fade .4s ease}
-@media(max-width:768px){.nav{flex-direction:column;align-items:flex-start}button{width:100%}}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px}
+.page{animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+@media(max-width:768px){
+ .container{padding:10px}
+ .nav{flex-direction:row}
+ .nav h2{font-size:16px}
+ button{width:100%}
+ .grid{grid-template-columns:1fr 1fr}
+ .card{padding:14px}
+ .table{font-size:12px}
+}
+@media(max-width:480px){
+ .grid{grid-template-columns:1fr}
+ .nav{flex-direction:column;align-items:flex-start}
+}
 </style>
 </head>
 <body>
@@ -119,14 +142,28 @@ function logout(){
 function addUser(){
  if(!newUser.value||!newPass.value) return;
  users.push({u:newUser.value,p:newPass.value,role:'user'});
- newUser.value='';newPass.value='';render();
+ newUser.value='';newPass.value='';
+ render();
 }
 
 function addPaslon(){
- const n=paslonName.value; const f=paslonImgFile.files[0];
- if(!n||!f) return alert('Lengkapi data');
+ const n=paslonName.value.trim();
+ const f=paslonImgFile.files[0];
+ if(!n){alert('Nama paslon kosong');return;}
+ if(!f){alert('Gambar paslon belum diupload');return;}
+ if(!f.type.startsWith('image/')){
+  alert('File harus gambar (jpg/png)');
+  paslonImgFile.value='';
+  return;
+ }
  const r=new FileReader();
- r.onload=e=>{paslon.push({name:n,img:e.target.result});render();};
+ r.onload=e=>{
+  paslon.push({name:n,img:e.target.result});
+  paslonName.value='';
+  paslonImgFile.value='';
+  render();
+ };
+ r.onerror=()=>alert('Gagal membaca file gambar');
  r.readAsDataURL(f);
 }
 
@@ -155,7 +192,6 @@ function vote(i){
 function editUser(i,f,v){users[i][f]=v}
 function deleteUser(i){users.splice(i,1);render()}
 
-// ===== EXPORT PDF (FRONTEND SIMULATION) =====
 function exportRekapPDF(){
  let content='HASIL VOTING\n\n';
  paslon.forEach((p,i)=>{
@@ -172,14 +208,13 @@ function exportRekapPDF(){
 }
 
 function render(){
- // 1 akun = 1 vote enforcement
  Object.keys(votes).forEach(u=>{ if(!users.find(x=>x.u===u)) delete votes[u]; });
  paslonList.innerHTML=paslon.map(p=>`<div class='card'><h4>${p.name}</h4><img src='${p.img}'></div>`).join('');
  voteList.innerHTML=paslon.map((p,i)=>`<div class='card'><h4>${p.name}</h4><button class='primary' onclick='vote(${i})'>Pilih</button></div>`).join('');
 
  let u='<tr><th>Username</th><th>Password</th><th>Role</th><th>Aksi</th></tr>';
  users.forEach((x,i)=>{
-  u+=`<tr><td><input value='${x.u}' onchange="editUser(${i},'u',this.value)"></td><td><input value='${x.p}' onchange="editUser(${i},'p',this.value)"></td><td><select onchange="editUser(${i},'role',this.value)"><option value='admin' ${x.role==='admin'?'selected':''}>admin</option><option value='user' ${x.role==='user'?'selected':''}>user</option></select></td><td><button onclick='deleteUser(${i})'>Hapus</button></td></tr>`;
+  u+=`<tr><td><input value='${x.u}' onchange=\"editUser(${i},'u',this.value)\"></td><td><input value='${x.p}' onchange=\"editUser(${i},'p',this.value)\"></td><td><select onchange=\"editUser(${i},'role',this.value)\"><option value='admin' ${x.role==='admin'?'selected':''}>admin</option><option value='user' ${x.role==='user'?'selected':''}>user</option></select></td><td><button onclick=\"deleteUser(${i})\">Hapus</button></td></tr>`;
  });
  userTable.innerHTML=u;
 
